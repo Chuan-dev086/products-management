@@ -1,0 +1,21 @@
+const express = require("express");
+const app = express();
+const mongoose = require("mongoose");
+const userRoutes = require("./routes/userRoute");
+const productRoutes = require("./routes/productRoute");
+
+mongoose
+  .connect("mongodb://localhost:27017/jwt_with_products")
+  .then(() => {
+    console.log("MongoDB Connected");
+  })
+  .catch((err) => console.log(err));
+
+app.use("/users", userRoutes);
+app.use("/products", productRoutes);
+
+const PORT = 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server is running at http://localhost:${PORT}`);
+});

@@ -1,22 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./Login.css";
 import axios from "axios";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const userToken = localStorage.getItem("token");
+    if (userToken !== null) {
+      navigate("/products");
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // 💡 Add your login / authentication logic here
+
     console.log("Form submitted:", { email, password });
     try {
       const response = await axios.post("http://localhost:3000/users/login", {
         email,
         password,
       });
-      console.log("Login successful: ", response.data);
+      localStorage.setItem("token", response.data.token);
+      navigate("/products");
+      console.log(response.data);
       alert("Login Successful!");
     } catch (error) {
       console.log("Login Error: ", error);
@@ -54,9 +65,14 @@ function Login() {
         <button type="submit" className="login-btn">
           Sign In
         </button>
-        <Link to="/signup" className="form-group">
-          Register Here
-        </Link>
+        <button
+          className="register-btn"
+          type="button"
+          style={{ marginTop: "12px" }}
+          onClick={() => navigate("/register")}
+        >
+          No account? Sign up here!
+        </button>
       </form>
     </div>
   );

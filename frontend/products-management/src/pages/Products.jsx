@@ -55,18 +55,55 @@ export default function Products() {
 
   const handleAddSave = async (payload) => {
     try {
-      const response = await api.post("/products", payload, {
+      if (currentProduct == null) {
+        const response = await api.post("/products", payload, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        console.log(response.data);
+        setProducts([...products, response.data]);
+      } else {
+        const response = await api.patch(
+          `/products/${currentProduct._id}`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
+        console.log(response.data);
+        const updatedProducts = products.map((product) => {
+          if (product._id == currentProduct._id) {
+            return response.data;
+          } else return product;
+        });
+        setProducts(updatedProducts);
+      }
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert("Failed to add/edit product. Please check your connection.");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const response = await api.delete(`/products/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      console.log(response.data);
-      // OPTIONAL FIX: Use the response data (which usually includes the database ID)
-      // instead of the raw payload, so your UI has the correct item IDs.
-      setProducts([...products, response.data]);
+      // console.log(response.data);
+      if (response.status == 204) {
+        const remainingProducts = products.filter((product) => {
+          return product._id != id;
+        });
+        setProducts(remainingProducts);
+      }
     } catch (error) {
-      console.error("Error saving product:", error);
-      alert("Failed to add product. Please check your connection.");
+      console.log(error);
+      alert("Failed to delete product. Please check your connection.");
     }
   };
 
@@ -126,7 +163,7 @@ export default function Products() {
                 key={product._id}
                 product={product}
                 onEdit={handleOpenEditForm}
-                // onDelete={onDeleteProduct}
+                onDelete={handleDelete}
               />
             ))}
           </div>

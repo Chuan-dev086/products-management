@@ -2,16 +2,20 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import ProductCard from "../components/ProductCard";
 import { useNavigate } from "react-router";
+import ProductModal from "../components/ProductModal";
+import api from "../utils/api";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const getAllProducts = async () => {
       try {
         const userToken = localStorage.getItem("token");
-        console.log(userToken);
+        // console.log(userToken);
         if (userToken == null) throw new Error("User Token is unavailable");
 
         const response = await axios.get("http://localhost:3000/products", {
@@ -21,7 +25,7 @@ export default function Products() {
         });
         setProducts(response.data);
       } catch (error) {
-        console.log(error);
+        // console.log(error);
         localStorage.removeItem("token");
         navigate("/");
       }
@@ -30,7 +34,7 @@ export default function Products() {
   }, []);
 
   useEffect(() => {
-    console.log(products);
+    // console.log(products);
   }, [products]);
 
   const onLogout = (e) => {
@@ -39,47 +43,101 @@ export default function Products() {
     navigate("/");
   };
 
+  const handleOpenAddForm = () => {
+    setCurrentProduct(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditForm = (product) => {
+    setCurrentProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const handleAddSave = async (payload) => {
+    try {
+      const response = await api.post("/products", payload, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      console.log(response.data);
+      // OPTIONAL FIX: Use the response data (which usually includes the database ID)
+      // instead of the raw payload, so your UI has the correct item IDs.
+      setProducts([...products, response.data]);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert("Failed to add product. Please check your connection.");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Navigation Header */}
-      <header className="px-6 py-4 top-0 z-10 bg-white/80 border-b border-slate-100 sticky backdrop-blur-md">
-        <div className="max-w-7xl mx-auto justify-between flex items-center">
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Storefront
-          </h1>
+    <>
+      <div className="flex-col min-h-screen bg-slate-50 flex">
+        {/* Top Management Header */}
+        <header className="px-6 py-4 top-0 z-10 bg-white border-b border-slate-200 sticky">
+          <div className="gap-4 max-w-7xl mx-auto justify-between flex items-center">
+            <div>
+              <h1 className="text-xl font-bold text-slate-900">
+                Inventory Management
+              </h1>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Manage details, categories, and pricing for {products.length}{" "}
+                listed items.
+              </p>
+            </div>
 
-          {/* Logout Button */}
-          <button
-            onClick={onLogout}
-            className="gap-2 px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl flex items-center hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-          >
-            {/* Simple Logout Icon */}
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            <div className="gap-3 flex items-center">
+              {/* Create Trigger */}
+              <button
+                onClick={handleOpenAddForm}
+                className="gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-xl flex items-center hover:bg-slate-800 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4.5v15m7.5-7.5h-15"
+                  />
+                </svg>
+                Add Product
+              </button>
+
+              <button
+                onClick={onLogout}
+                className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl bg-white hover:text-slate-900 transition-all duration-150 hover:bg-slate-50"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Admin Space */}
+        <main className="flex-1 p-6">
+          <div className="grid grid-cols-1 gap-4 max-w-7xl mx-auto sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {products.map((product) => (
+              <ProductCard
+                key={product._id}
+                product={product}
+                onEdit={handleOpenEditForm}
+                // onDelete={onDeleteProduct}
               />
-            </svg>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Main Grid Content */}
-      <main className="p-6">
-        <div className="grid grid-cols-1 gap-6 max-w-7xl mx-auto sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))}
-        </div>
-      </main>
-    </div>
+            ))}
+          </div>
+        </main>
+      </div>
+      <ProductModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleAddSave}
+        editingProduct={currentProduct}
+      />
+    </>
   );
 }

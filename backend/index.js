@@ -5,6 +5,8 @@ const userRoutes = require("./routes/userRoute");
 const productRoutes = require("./routes/productRoute");
 const cors = require("cors");
 
+require("dotenv").config();
+
 const corsHandler = cors({
   origin: "*",
   methods: "GET,POST,PUT,DELETE",
